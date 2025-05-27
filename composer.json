@@ -1,0 +1,31 @@
+{
+  "name": "welsh-tidy-mouse/binary-providers",
+  "description": "Binary providers",
+  "type": "library",
+  "license": "WTFPL",
+  "require": {
+    "php": "^8.3",
+    "welsh-tidy-mouse/binary-fetcher": "dev-main"
+  },
+  "require-dev": {
+    "phpstan/phpstan": "^1.11",
+    "friendsofphp/php-cs-fixer": "^3.50",
+    "phpmd/phpmd": "^2.14"
+  },
+  "autoload": {
+    "psr-4": {
+      "WelshTidyMouse\\BinaryProvider\\": "src/"
+    }
+  },
+  "scripts": {
+    "binary-fetcher": "binary-fetcher",
+    "lint": "phpstan analyse src",
+    "cs": "php-cs-fixer fix --config=.php-cs-fixer.php --allow-risky=yes",
+    "md": "phpmd src text phpmd.xml",
+    "check": [
+      "@test",
+      "@lint",
+      "@md"
+    ]
+  }
+}

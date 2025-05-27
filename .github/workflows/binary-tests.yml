@@ -1,0 +1,104 @@
+name: Binaries Tests
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+
+jobs:
+  test:
+    name: Test ${{ matrix.binary }} on ${{ matrix.os }}
+    runs-on: ${{ matrix.runner }}
+    container: ${{ matrix.container }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu, windows, macos, alpine]
+        binary-provider: [PnpmBinaryProvider, BunJsBinaryProvider, DartSassBinaryProvider, TailwindCssBinaryProvider]
+        include:
+          - os: ubuntu
+            runner: ubuntu-latest
+            container: ''
+            shell: bash
+          - os: windows
+            runner: windows-latest
+            container: ''
+            shell: bash
+          - os: macos
+            runner: macos-latest
+            container: ''
+            shell: bash
+          - os: alpine
+            runner: ubuntu-latest
+            container: alpine:latest
+            shell: sh
+          - binary-provider: PnpmBinaryProvider
+            version: 'v10.11.1'
+            binary: 'pnpm'
+            command: './pnpm -v'
+          - binary-provider: BunJsBinaryProvider
+            version: 'latest'
+            binary: 'bun'
+            command: './bun -v'
+          - binary-provider: DartSassBinaryProvider
+            version: '1.89.0'
+            binary: 'sass'
+            command: './sass --version'
+          - binary-provider: TailwindCssBinaryProvider
+            version: 'latest'
+            binary: 'tailwind'
+            command: './tailwind -v'
+
+    defaults:
+      run:
+        shell: ${{ matrix.shell }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        if: matrix.os != 'alpine'
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: mbstring, json, zip, tokenizer, xml, iconv
+          tools: composer
+
+      - name: Setup PHP on Alpine
+        if: matrix.os == 'alpine'
+        run: |
+          apk add --no-cache \
+            php \
+            php-cli \
+            php-mbstring \
+            php-json \
+            php-phar \
+            php-openssl \
+            php-iconv \
+            php-zip \
+            php-tokenizer \
+            php-xml \
+            curl \
+            unzip \
+            libstdc++ \
+            libgcc
+      
+          php -v
+          echo "::group::Install Composer"
+          curl -sS https://getcomposer.org/installer | php
+          mv composer.phar /usr/local/bin/composer
+          composer --version
+          echo "::endgroup::"
+
+      - name: Composer install
+        run: composer install
+
+      - name: Run PHP script
+        run: composer binary-fetcher download "\WelshTidyMouse\BinaryProvider\${{ matrix.binary-provider }}" ${{ matrix.version }}
+
+      - name: Make binary executable
+        run: chmod +x ${{ matrix.binary }} || true
+
+      - name: Run binary
+        run: ${{ matrix.command }}
